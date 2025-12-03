@@ -21,7 +21,7 @@ def submit_and_list():
     )
     print("Submission uploaded.")
 
-    sleep(10)
+    sleep(60)
 
     submissions = api.competition_submissions(COMPETITION)
 
