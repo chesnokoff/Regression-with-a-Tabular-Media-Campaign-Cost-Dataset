@@ -1,0 +1,59 @@
+name: Kaggle Submit
+
+on:
+  workflow_dispatch:
+
+jobs:
+  submit:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install kaggle pandas scikit-learn
+
+      - name: Run model (create submission.csv)
+        run: python main.py
+
+      - name: Submit to Kaggle
+        run: |
+          kaggle competitions submit \
+            -c playground-series-s3e11 \
+            -f submission.csv \
+            -m "CI submit from main"
+
+      - name: Wait for Kaggle scoring
+        run: |
+          echo "Waiting for Kaggle to score..."
+          for i in {1..30}; do
+            line=$(kaggle competitions submissions -c playground-series-s3e11 --csv | tail -n 1)
+            status=$(echo "$line" | awk -F, '{print $4}')
+            score=$(echo "$line"  | awk -F, '{print $5}')
+            echo "Attempt $i: status=$status, publicScore=$score"
+            if [ "$status" = "complete" ]; then
+              echo "Done! Final public score: $score"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Timed out waiting for Kaggle scoring"
+          exit 1
+
+
+      - name: Show last submissions
+        run: |
+          kaggle competitions submissions -c playground-series-s3e11
+
