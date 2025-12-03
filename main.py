@@ -1,9 +1,22 @@
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor, VotingRegressor
 import pandas as pd
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
 
 class Model:
     def __init__(self):
-        self.model = DecisionTreeRegressor()
+        ensemble = VotingRegressor([
+            ("rf", RandomForestRegressor(n_estimators=200, random_state=42)),
+            ("gb", GradientBoostingRegressor(random_state=42)),
+            ("knn", KNeighborsRegressor(n_neighbors=5)),
+        ])
+
+        self.model = Pipeline(steps=[
+            ("scaler", StandardScaler()),
+            ("regressor", ensemble),
+        ])
 
     def fit(self, X, y):
         self.model.fit(X, y)
